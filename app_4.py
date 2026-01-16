@@ -20,16 +20,38 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive"
 ]
 
+# 기존 get_client 함수를 지우고 이 코드로 교체하세요.
+
 def get_client():
     try:
-        creds = Credentials.from_service_account_file("secrets.json", scopes=SCOPES)
-        client = gspread.authorize(creds)
-        return client
+        # [1순위] 웹(Streamlit Cloud) 환경인지 먼저 확인
+        # secrets.json 파일을 찾는 게 아니라, 웹사이트에 입력한 Secrets를 먼저 봅니다.
+        if "gcp_service_account" in st.secrets:
+            key_dict = dict(st.secrets["gcp_service_account"])
+            
+            # 줄바꿈 문자 처리 (필수)
+            if "private_key" in key_dict:
+                key_dict["private_key"] = key_dict["private_key"].replace("\\n", "\n")
+            
+            # 파일(_file)이 아니라 정보(_info)로 인증
+            creds = Credentials.from_service_account_info(key_dict, scopes=SCOPES)
+            client = gspread.authorize(creds)
+            return client
+
+        # [2순위] 웹이 아니면 내 컴퓨터(로컬) 파일 확인
+        # 웹에서는 이 부분까지 오지 않으므로 에러가 안 납니다.
+        elif os.path.exists("secrets.json"):
+            creds = Credentials.from_service_account_file("secrets.json", scopes=SCOPES)
+            client = gspread.authorize(creds)
+            return client
+
+        else:
+            st.error("⚠️ 인증 정보를 찾을 수 없습니다. (웹 Secrets 설정 또는 로컬 json 파일 확인)")
+            return None
+
     except Exception as e:
-        st.error(f"⚠️ 인증 실패! secrets.json 파일을 확인하세요.\n에러: {e}")
+        st.error(f"⚠️ 인증 에러 발생: {e}")
         return None
-
-
 # ==========================================
 # 2. 데이터 로딩 (장비목록 & 사용자관리 & 기업목록)
 # ==========================================
