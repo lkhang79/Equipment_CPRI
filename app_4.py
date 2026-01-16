@@ -1,5 +1,4 @@
-import streamlit as st
-import gspread
+import streamlit as sts
 import pandas as pd
 from google.oauth2.service_account import Credentials
 from datetime import datetime, date
@@ -34,40 +33,33 @@ def get_client():
 # 2. 데이터 로딩 (장비목록 & 사용자관리 & 기업목록)
 # ==========================================
 
-def get_master_data(client):
-    """장비목록, 사용자, 기업목록 로딩"""
+# app.py 의 get_client 함수 교체
+
+def get_client():
     try:
-        doc = client.open("장비관리시스템")
-        
-        # [1] 장비 목록
-        sheet_equip = doc.worksheet("장비목록")
-        equip_records = sheet_equip.get_all_records()
-        
-        dept_map = {}
-        info_map = {}
-        
-        for row in equip_records:
-            dept = row.get('부서명')
-            eq_name = row.get('장비명')
-            eq_no = row.get('장비번호')
-            eq_type = row.get('장비구분')
-            if not dept or not eq_name:
-                continue
-
-            if dept not in dept_map:
-                dept_map[dept] = []
-            dept_map[dept].append(eq_name)
-            info_map[eq_name] = {"no": eq_no, "type": eq_type}
+        # 1. Streamlit Cloud (인터넷) 환경 확인
+        if "gcp_service_account" in st.secrets:
+            # secrets 내용을 딕셔너리로 가져옴
+            key_dict = dict(st.secrets["gcp_service_account"])
             
-        # [2] 사용자 목록
-        sheet_user = doc.worksheet("사용자관리")
-        user_records = sheet_user.get_all_records()
-        user_db = {
-            str(row['아이디']): row
-            for row in user_records
-            if row.get('아이디')
-        }
-
+            # [중요!] private_key의 줄바꿈 문자(\n)를 실제 줄바꿈으로 변환
+            # 이 코드가 없으면 "Invalid JWT Signature" 에러가 납니다.
+            if "private_key" in key_dict:
+                key_dict["private_key"] = key_dict["private_key"].replace("\\n", "\n")
+            
+            creds = Credentials.from_service_account_info(key_dict, scopes=SCOPES)
+            
+        # 2. 내 컴퓨터 (로컬) 환경 확인
+        else:
+            creds = Credentials.from_service_account_file("secrets.json", scopes=SCOPES)
+            
+        client = gspread.authorize(creds)
+        return client
+        
+    except Exception as e:
+        st.error(f"⚠️ 인증 실패! 에러: {e}")
+        return None
+    
         # [3] 기업 목록 (제목 무시하고 위치로 가져오기)
         comp_db = {}
         try:
