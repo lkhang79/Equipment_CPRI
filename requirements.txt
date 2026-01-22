@@ -1,4 +1,5 @@
 streamlit
 pandas
-gspread          <-- 추가 필수 (현재 에러 원인)
-google-auth      <-- 추가 권장 (4번째 줄 코드 실행용)
+numpy
+gspread
+google-auth
