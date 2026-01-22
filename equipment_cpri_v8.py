@@ -303,8 +303,8 @@ def main_app():
 
     try:
         doc = client.open("장비관리시스템")
-    except:
-        st.error("파일 열기 실패")
+    except Exception as e:
+        st.error(f"파일 열기 실패: {e}")
         return
 
     dept_equip_map, equip_info_db, _, comp_db, comp_norm_db = get_master_data(client)
