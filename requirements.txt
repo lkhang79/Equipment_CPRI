@@ -1,3 +1,5 @@
 streamlit
 pandas
 numpy
+gspread          <-- 추가 필수!
+oauth2client     <-- 구글 인증용 (코드에서 쓰고 있다면 필요)
